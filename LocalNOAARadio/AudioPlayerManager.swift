@@ -16,6 +16,7 @@ class AudioPlayerManager: NSObject
 {
   var isPlaying = false
   var statusText = "Ready to play"
+  var onStreamFailure: (() -> Void)? // Callback when stream fails
   
   private var player: AVPlayer?
   private var playerItem: AVPlayerItem?
@@ -103,6 +104,8 @@ class AudioPlayerManager: NSObject
             {
               print("❌ Player failed: \(error.localizedDescription)")
               self?.statusText = "Stream error: \(error.localizedDescription)"
+              self?.isPlaying = false
+              self?.onStreamFailure?() // Notify that stream failed
             } // if
 
           case .unknown:
@@ -124,6 +127,8 @@ class AudioPlayerManager: NSObject
       {
         print("❌ Playback error: \(error.localizedDescription)")
         self?.statusText = "Playback error: \(error.localizedDescription)"
+        self?.isPlaying = false
+        self?.onStreamFailure?() // Notify that stream failed
       } // if
     } // addObserver
     

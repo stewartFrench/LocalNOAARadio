@@ -204,6 +204,22 @@ struct ContentView: View
     .onAppear
     {
       stationService.requestLocation()
+      
+              // Set up stream failure callback
+      audioPlayer.onStreamFailure =
+      {
+        print("🔄 Stream failed, trying next closest station...")
+        if let nextStation = stationService.tryNextClosestStation(),
+           let url = nextStation.url
+        {
+          print("▶️ Auto-switching to: \(nextStation.city)")
+          audioPlayer.play(url: url)
+        } // if
+        else
+        {
+          print("⚠️ No more stations available")
+        } // else
+      } // onStreamFailure
     } // onAppear
     .onChange(of: stationService.closestStation)
     { oldValue, newValue in

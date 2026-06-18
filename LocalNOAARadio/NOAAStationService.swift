@@ -56,6 +56,7 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
   var currentLocation: CLLocation?
   var locationStatus = "Getting location..."
   var customStationManager = CustomStationManager()
+  var sortedStreamableStations: [NOAAStation] = [] // All streamable stations sorted by distance
   
   private let locationManager = CLLocationManager()
   private var stations: [NOAAStation] = []
@@ -184,6 +185,9 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
             // Combine built-in and custom stations
     let allStations = stations + customStationManager.customStations
     
+            // Create array of streamable stations with distances
+    var streamableStationsWithDistance: [(station: NOAAStation, distance: CLLocationDistance)] = []
+    
     for station in allStations
     {
       let stationLocation = CLLocation(latitude : station.location.latitude,
@@ -206,7 +210,18 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
         shortestStreamableDistance = distance
         nearestStreamableStation = station
       } // if
+      
+              // Add to streamable list for sorting
+      if station.hasStream
+      {
+        streamableStationsWithDistance.append((station: station, distance: distance))
+      } // if
     } // for
+    
+            // Sort streamable stations by distance
+    sortedStreamableStations = streamableStationsWithDistance
+      .sorted { $0.distance < $1.distance }
+      .map { $0.station }
     
             // Set the closest streamable station for playback
     closestStation = nearestStreamableStation
@@ -239,5 +254,31 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
       locationStatus = "Nearest station: \(overall.city) at \(overall.frequency) (\(String(format: "%.1f", distanceInMiles)) mi)\nNo streaming available - use a physical weather radio"
     } // else if
   } // findClosestStationInternal
+
+
+  //----
+          // Try the next closest station (used when current stream fails)
+  func tryNextClosestStation() -> NOAAStation?
+  {
+    guard let current = closestStation,
+          let currentIndex = sortedStreamableStations.firstIndex(of: current),
+          currentIndex + 1 < sortedStreamableStations.count else
+    {
+      print("⚠️ No more stations available to try")
+      return nil
+    } // guard
+    
+    let nextStation = sortedStreamableStations[currentIndex + 1]
+    closestStation = nextStation
+    
+    let distanceInMiles = currentLocation?.distance(from: CLLocation(latitude : nextStation.latitude,
+                                                                      longitude: nextStation.longitude)) ?? 0.0
+    let miles = distanceInMiles / 1609.34
+    
+    print("🔄 Switching to next closest station: \(nextStation.city) (\(String(format: "%.1f", miles)) miles away)")
+    locationStatus = "Station: \(nextStation.city) (\(String(format: "%.1f", miles)) mi) - Previous stream failed"
+    
+    return nextStation
+  } // tryNextClosestStation
 
 } // class NOAAStationService
