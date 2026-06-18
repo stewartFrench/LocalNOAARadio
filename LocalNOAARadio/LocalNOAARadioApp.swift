@@ -7,11 +7,18 @@
 
 import SwiftUI
 
+
+//------------
 @main
-struct LocalNOAARadioApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
+struct LocalNOAARadioApp: App
+{
+
+  var body: some Scene
+  {
+    WindowGroup
+    {
+      ContentView()
+    } // WindowGroup
+  } // body
+
+} // struct LocalNOAARadioApp

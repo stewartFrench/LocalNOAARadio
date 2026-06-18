@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.10" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>SoftwareDesignDocument</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown.min.css" />
+</head>
+<body>
+<h1 id="localnoaaradio---software-design-document">LocalNOAARadio -
+Software Design Document</h1>
+<h2 id="introduction">1. Introduction</h2>
+<h3 id="purpose">1.1 Purpose</h3>
+<p>This document provides a comprehensive technical overview of
+LocalNOAARadio, an iOS application that streams NOAA Weather Radio
+broadcasts from the closest available station to the user’s
+location.</p>
+<h3 id="scope">1.2 Scope</h3>
+<p>LocalNOAARadio is a native iOS application built with SwiftUI that: -
+Automatically detects user location - Identifies the closest NOAA
+weather radio station with streaming capability - Streams live NOAA
+weather broadcasts - Supports custom station management - Enables
+location-based “what if” searches - Provides information about
+non-streamable stations that may be closer</p>
+<h3 id="definitions-and-acronyms">1.3 Definitions and Acronyms</h3>
+<ul>
+<li><strong>NOAA</strong>: National Oceanic and Atmospheric
+Administration</li>
+<li><strong>NWR</strong>: NOAA Weather Radio</li>
+<li><strong>AVFoundation</strong>: Apple’s framework for audiovisual
+media</li>
+<li><strong>CoreLocation</strong>: Apple’s framework for location
+services</li>
+<li><strong>MapKit</strong>: Apple’s framework for maps and location
+search</li>
+</ul>
+<h2 id="system-overview">2. System Overview</h2>
+<h3 id="system-context">2.1 System Context</h3>
+<p>LocalNOAARadio is a standalone iOS application that: - Uses device
+GPS for location detection - Streams audio from internet-based NOAA
+radio sources - Operates in foreground and background modes - Persists
+user preferences locally</p>
+<h3 id="system-architecture">2.2 System Architecture</h3>
+<p>The application follows the Model-View-ViewModel (MVVM) pattern using
+SwiftUI’s modern declarative approach with the <code>@Observable</code>
+macro for state management.</p>
+<pre><code>┌─────────────────────────────────────────────────────┐
+│                   User Interface                    │
+│(ContentView, LocationSearchView, ManageStationsView)│
+└────────────────┬────────────────────────────────────┘
+                 │
+                 ├──────────────────┬─────────────────┐
+                 │                  │                 │
+         ┌───────▼──────┐  ┌────────▼────────┐  ┌─────▼─────────┐
+         │AudioPlayer   │  │NOAAStation      │  │CustomStation  │
+         │Manager       │  │Service          │  │Manager        │
+         └───────┬──────┘  └────────┬────────┘  └─────┬─────────┘
+                 │                  │                 │
+         ┌───────▼──────┐  ┌────────▼────────┐  ┌─────▼─────────┐
+         │AVFoundation  │  │CoreLocation     │  │UserDefaults   │
+         │AVPlayer      │  │CLLocationMgr    │  │               │
+         └──────────────┘  └────────┬────────┘  └───────────────┘
+                                    │
+                           ┌────────▼────────┐
+                           │NOAAStations.json│
+                           └─────────────────┘</code></pre>
+<h2 id="architectural-design">3. Architectural Design</h2>
+<h3 id="design-patterns">3.1 Design Patterns</h3>
+<h4 id="observable-pattern">3.1.1 Observable Pattern</h4>
+<p>Uses Swift’s <code>@Observable</code> macro for reactive state
+management: - <code>AudioPlayerManager</code>: Manages audio playback
+state - <code>NOAAStationService</code>: Manages location and station
+data - <code>CustomStationManager</code>: Manages user-added
+stations</p>
+<h4 id="delegation-pattern">3.1.2 Delegation Pattern</h4>
+<p>Implements <code>CLLocationManagerDelegate</code> for location
+updates</p>
+<h4 id="repository-pattern">3.1.3 Repository Pattern</h4>
+<p>JSON-based station database loaded at runtime</p>
+<h3 id="component-architecture">3.2 Component Architecture</h3>
+<h4 id="presentation-layer">3.2.1 Presentation Layer</h4>
+<p><strong>Views (SwiftUI)</strong>:</p>
+<ul>
+<li><code>ContentView</code>: Main application interface</li>
+<li><code>LocationSearchView</code>: Location search functionality</li>
+<li><code>AddCustomStationView</code>: Form for adding custom
+stations</li>
+<li><code>ManageStationsView</code>: List management for custom
+stations</li>
+</ul>
+<h4 id="business-logic-layer">3.2.2 Business Logic Layer</h4>
+<p><strong>Services</strong>:</p>
+<ul>
+<li><code>NOAAStationService</code>: Location detection and station
+selection</li>
+<li><code>AudioPlayerManager</code>: Audio streaming and playback
+control</li>
+<li><code>CustomStationManager</code>: Persistence and management of
+custom stations</li>
+</ul>
+<h4 id="data-layer">3.2.3 Data Layer</h4>
+<p><strong>Models</strong>:</p>
+<ul>
+<li><code>NOAAStation</code>: Represents a weather radio station</li>
+<li>JSON database: Persistent station information</li>
+</ul>
+<h2 id="detailed-design">4. Detailed Design</h2>
+<h3 id="data-models">4.1 Data Models</h3>
+<h4 id="noaastation">4.1.1 NOAAStation</h4>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> NOAAStation<span class="op">:</span> <span class="dt">Codable</span><span class="op">,</span> <span class="dt">Equatable</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span>  <span class="va">callSign</span><span class="op">:</span> String  <span class="co">// Station identifier (e.g., &quot;KEC56&quot;)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> <span class="va">frequency</span><span class="op">:</span> String  <span class="co">// Broadcast frequency (e.g., &quot;162.400 MHz&quot;)</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span>      <span class="va">city</span><span class="op">:</span> String  <span class="co">// Location (e.g., &quot;Dallas-Fort Worth, TX&quot;)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span>  <span class="va">latitude</span><span class="op">:</span> Double  <span class="co">// Geographic latitude</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> <span class="va">longitude</span><span class="op">:</span> Double  <span class="co">// Geographic longitude</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> <span class="va">streamURL</span><span class="op">:</span> String<span class="op">?</span> <span class="co">// Optional streaming URL</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span>  <span class="va">location</span><span class="op">:</span> CLLocationCoordinate2D</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>                         <span class="co">// Computed coordinate</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span>       <span class="va">url</span><span class="op">:</span> URL<span class="op">?</span>    <span class="co">// Computed URL object</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span> <span class="va">hasStream</span><span class="op">:</span> Bool    <span class="co">// Stream availability check</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Design Rationale</strong>:</p>
+<ul>
+<li><code>streamURL</code> is optional to support stations without
+internet streams</li>
+<li>Computed properties reduce data redundancy</li>
+<li><code>Equatable</code> conformance enables SwiftUI change
+detection</li>
+<li><code>Codable</code> conformance enables JSON serialization</li>
+</ul>
+<h3 id="service-components">4.2 Service Components</h3>
+<h4 id="noaastationservice">4.2.1 NOAAStationService</h4>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Request and manage location permissions</li>
+<li>Track device location</li>
+<li>Find closest streamable station</li>
+<li>Track closest non-streamable station (if closer)</li>
+<li>Manage custom stations integration</li>
+</ul>
+<p><strong>Key Methods</strong>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">requestLocation</span><span class="op">()</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">findClosestStation</span><span class="op">(</span><span class="va">at</span> <span class="va">location</span><span class="op">:</span> <span class="dt">CLLocation</span><span class="op">)</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">func</span> <span class="fu">findClosestStationInternal</span><span class="op">(</span><span class="va">to</span> <span class="va">location</span><span class="op">:</span> <span class="dt">CLLocation</span><span class="op">)</span></span></code></pre></div>
+<p><strong>State Properties</strong>: -
+<code>closestStation: NOAAStation?</code> - Closest streamable station -
+<code>closestNonStreamStation: NOAAStation?</code> - Closest overall
+station (if no stream) - <code>currentLocation: CLLocation?</code> -
+Current device location - <code>locationStatus: String</code> -
+User-facing status message -
+<code>customStationManager: CustomStationManager</code> - Custom station
+integration</p>
+<p><strong>Algorithm: findClosestStationInternal</strong></p>
+<pre><code>1. Initialize tracking variables:
+   - nearestStreamableStation, shortestStreamableDistance
+   - nearestOverallStation, shortestOverallDistance
+
+2. Combine built-in stations + custom stations
+
+3. For each station:
+   a. Calculate distance from current location
+   b. Update nearestOverallStation if closer
+   c. If station has stream AND closer: update
+      nearestStreamableStation
+
+4. Set closestStation = nearestStreamableStation
+
+5. If nearestOverallStation is closer than nearestStreamableStation:
+   a. Set closestNonStreamStation = nearestOverallStation
+   b. Update locationStatus with both stations&#39; information
+
+6. Else: Clear closestNonStreamStation</code></pre>
+<p><strong>Distance Calculation</strong>:</p>
+<p>Uses <code>CLLocation.distance(from:)</code> which calculates
+geodesic distance (great circle distance) in meters, then converts to
+miles (÷ 1609.34).</p>
+<h4 id="audioplayermanager">4.2.2 AudioPlayerManager</h4>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Configure audio session for playback</li>
+<li>Manage AVPlayer lifecycle</li>
+<li>Handle play/pause/stop operations</li>
+<li>Track playback state</li>
+<li>Switch streams when station changes</li>
+</ul>
+<p><strong>Key Methods</strong>:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">play</span><span class="op">(</span><span class="va">url</span><span class="op">:</span> <span class="dt">URL</span><span class="op">)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">stop</span><span class="op">()</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">togglePlayPause</span><span class="op">(</span><span class="va">url</span><span class="op">:</span> <span class="dt">URL</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Audio Session Configuration</strong>:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Category<span class="op">:</span> <span class="op">.</span>playback</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>Mode<span class="op">:</span> <span class="op">.</span>spokenAudio</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>Options<span class="op">:</span> <span class="op">[]</span></span></code></pre></div>
+<p>This configuration:</p>
+<ul>
+<li>Enables background audio</li>
+<li>Optimizes for voice content</li>
+<li>Respects system volume</li>
+<li>Continues during screen lock</li>
+</ul>
+<p><strong>Stream Switching Logic</strong>:</p>
+<pre><code>1. If player exists:
+   a. Get current player&#39;s URL
+   b. If same URL as requested: resume playback
+   c. If different URL: stop current player, create new one
+
+2. If no player exists: create new player
+
+3. Create AVPlayerItem with new URL
+4. Create AVPlayer with player item
+5. Start playback
+6. Update state (isPlaying = true)</code></pre>
+<h4 id="customstationmanager">4.2.3 CustomStationManager</h4>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Persist custom stations to UserDefaults</li>
+<li>Load custom stations on initialization</li>
+<li>Add new custom stations</li>
+<li>Delete custom stations</li>
+<li>Provide array of custom stations to NOAAStationService</li>
+</ul>
+<p><strong>Storage Key</strong>: <code>"customStations"</code></p>
+<p><strong>Persistence Format</strong>: JSON array serialized to
+UserDefaults</p>
+<p><strong>Key Methods</strong>:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">addStation</span><span class="op">(</span> <span class="va">callSign</span><span class="op">:</span> <span class="dt">String</span><span class="op">,</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                <span class="va">frequency</span><span class="op">:</span> <span class="dt">String</span><span class="op">,</span> </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                     <span class="va">city</span><span class="op">:</span> <span class="dt">String</span><span class="op">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                 <span class="va">latitude</span><span class="op">:</span> <span class="dt">Double</span><span class="op">,</span> </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                <span class="va">longitude</span><span class="op">:</span> <span class="dt">Double</span><span class="op">,</span> </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                <span class="va">streamURL</span><span class="op">:</span> <span class="dt">String</span><span class="op">?</span> <span class="op">)</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">deleteStation</span><span class="op">(</span> <span class="va">at</span> <span class="va">index</span><span class="op">:</span> <span class="dt">Int</span> <span class="op">)</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">deleteAllStations</span><span class="op">()</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">func</span> <span class="fu">saveCustomStations</span><span class="op">()</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">func</span> <span class="fu">loadCustomStations</span><span class="op">()</span></span></code></pre></div>
+<h3 id="user-interface-design">4.3 User Interface Design</h3>
+<h4 id="contentview">4.3.1 ContentView</h4>
+<p><strong>Layout Structure</strong>:</p>
+<pre><code>VStack
+├── Header
+│   ├── Settings gear button (top-right)
+│   ├── Antenna icon
+│   ├── &quot;NOAA Weather Radio&quot; title
+│   ├── Station city (if available)
+│   └── Station frequency (if available)
+├── Location Status
+│   ├── Status text (multi-line, centered)
+│   └── &quot;Search Different Location&quot; button
+├── Play/Pause Button
+│   ├── Enabled only if station has stream
+│   ├── Blue background when available
+│   └── Gray background when unavailable
+├── Status Text
+│   └── Current playback status
+├── Debug Info
+│   └── Stream URL (for development)
+└── ScrollView
+    └── Dynamic weather information text</code></pre>
+<p><strong>Dynamic Text States</strong>:</p>
+<ol type="1">
+<li><strong>Playing</strong>: Shows “LIVE BROADCAST” with broadcast
+information</li>
+<li><strong>Ready</strong>: Shows “Ready to Listen” with station
+details</li>
+<li><strong>Searching</strong>: Shows ” Finding Your Station” with NWR
+information</li>
+</ol>
+<p><strong>State Management</strong>:</p>
+<ul>
+<li><code>@State private var audioPlayer</code></li>
+<li><code>@State private var stationService</code></li>
+<li><code>@State private var showManageStations</code></li>
+<li><code>@State private var showLocationSearch</code></li>
+</ul>
+<p><strong>Lifecycle Hooks</strong>:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>onAppear <span class="op">{</span> stationService<span class="op">.</span>requestLocation<span class="op">()</span> <span class="op">}</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>onChange<span class="op">(</span>of<span class="op">:</span> stationService<span class="op">.</span>closestStation<span class="op">)</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> autoplay <span class="cf">if</span> stream available <span class="op">}</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>onDisappear <span class="op">{</span> audioPlayer<span class="op">.</span>stop<span class="op">()</span> <span class="op">}</span></span></code></pre></div>
+<p><strong>Auto-play Logic</strong>:</p>
+<p>When <code>closestStation</code> changes:</p>
+<ol type="1">
+<li>Check if new station exists and has stream URL</li>
+<li>Check if audio is not already playing</li>
+<li>If both true: automatically start playback</li>
+</ol>
+<h4 id="locationsearchview">4.3.2 LocationSearchView</h4>
+<p><strong>Purpose</strong>: Enable users to search for NOAA stations at
+any US location</p>
+<p><strong>Search Implementation</strong>:</p>
+<p>Uses <code>MKLocalSearch</code> API (iOS 26+):</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="va">request</span> <span class="op">=</span> MKLocalSearch<span class="op">.</span>Request<span class="op">()</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>request<span class="op">.</span>naturalLanguageQuery <span class="op">=</span> searchText</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>request<span class="op">.</span>resultTypes <span class="op">=</span> <span class="op">[.</span>address<span class="op">,</span> <span class="op">.</span>pointOfInterest<span class="op">]</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="va">search</span> <span class="op">=</span> MKLocalSearch<span class="op">(</span>request<span class="op">:</span> request<span class="op">)</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>search<span class="op">.</span>start <span class="op">{</span> response<span class="op">,</span> error <span class="cf">in</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Process first result</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Update stationService with new location</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>UI Components</strong>:</p>
+<ul>
+<li>Search text field</li>
+<li>Search button</li>
+<li>Results list showing found stations</li>
+<li>Distance display for each station</li>
+</ul>
+<h4 id="addcustomstationview">4.3.3 AddCustomStationView</h4>
+<p><strong>Purpose</strong>: Form interface for adding custom NOAA
+stations</p>
+<p><strong>Form Sections</strong>:</p>
+<ol type="1">
+<li><strong>Station Information</strong>
+<ul>
+<li>Call Sign (uppercase, required)</li>
+<li>Frequency (required)</li>
+<li>City, State (required)</li>
+</ul></li>
+<li><strong>Location Coordinates</strong>
+<ul>
+<li>Latitude (decimal, -90 to 90, required)</li>
+<li>Longitude (decimal, -180 to 180, required)</li>
+<li>Helper tip for getting coordinates</li>
+</ul></li>
+<li><strong>Stream URL (Optional)</strong>
+<ul>
+<li>URL text field (http/https)</li>
+<li>Can be left empty for non-streamable stations</li>
+</ul></li>
+</ol>
+<p><strong>Validation</strong>:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>isValidInput<span class="op">:</span> Bool</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">!</span>callSign<span class="op">.</span>isEmpty <span class="op">&amp;&amp;</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">!</span>frequency<span class="op">.</span>isEmpty <span class="op">&amp;&amp;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">!</span>city<span class="op">.</span>isEmpty <span class="op">&amp;&amp;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">!</span>latitude<span class="op">.</span>isEmpty <span class="op">&amp;&amp;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">!</span>longitude<span class="op">.</span>isEmpty</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Note: streamURL NOT required</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Coordinate Validation</strong>:</p>
+<ul>
+<li>Latitude: -90° ≤ lat ≤ 90°</li>
+<li>Longitude: -180° ≤ lon ≤ 180°</li>
+</ul>
+<h4 id="managestationsview">4.3.4 ManageStationsView</h4>
+<p><strong>Purpose</strong>: List and manage custom stations</p>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>List of custom stations with swipe-to-delete</li>
+<li>“Delete All Custom Stations” button</li>
+<li>Displays: call sign, city, frequency for each station</li>
+</ul>
+<h2 id="data-management">5. Data Management</h2>
+<h3 id="station-database-noaastations.json">5.1 Station Database
+(NOAAStations.json)</h3>
+<p><strong>Format</strong>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ot">[</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;callSign&quot;</span><span class="fu">:</span> <span class="st">&quot;KEC56&quot;</span><span class="fu">,</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;frequency&quot;</span><span class="fu">:</span> <span class="st">&quot;162.550 MHz&quot;</span><span class="fu">,</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;city&quot;</span><span class="fu">:</span> <span class="st">&quot;Dallas-Fort Worth, TX&quot;</span><span class="fu">,</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;latitude&quot;</span><span class="fu">:</span> <span class="fl">32.7767</span><span class="fu">,</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;longitude&quot;</span><span class="fu">:</span> <span class="fl">-96.7970</span><span class="fu">,</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;streamURL&quot;</span><span class="fu">:</span> <span class="st">&quot;https://radio.weatherusa.net/NWR/KEC56_3.mp3&quot;</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;callSign&quot;</span><span class="fu">:</span> <span class="st">&quot;KIH41&quot;</span><span class="fu">,</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;frequency&quot;</span><span class="fu">:</span> <span class="st">&quot;162.400 MHz&quot;</span><span class="fu">,</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;city&quot;</span><span class="fu">:</span> <span class="st">&quot;Lexington, KY&quot;</span><span class="fu">,</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;latitude&quot;</span><span class="fu">:</span> <span class="fl">38.0406</span><span class="fu">,</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;longitude&quot;</span><span class="fu">:</span> <span class="fl">-84.5037</span><span class="fu">,</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;streamURL&quot;</span><span class="fu">:</span> <span class="kw">null</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="ot">]</span></span></code></pre></div>
+<p><strong>Current Coverage</strong>:</p>
+<ul>
+<li>185 stations with streaming URLs (all 50 states)</li>
+<li>10 Kentucky stations without streaming (demonstrating feature)</li>
+<li>Total: 195 stations</li>
+</ul>
+<p><strong>Loading Process</strong>:</p>
+<ol type="1">
+<li>Locate NOAAStations.json in app bundle</li>
+<li>Load data as Data object</li>
+<li>Decode JSON using JSONDecoder</li>
+<li>Store in memory as [NOAAStation] array</li>
+</ol>
+<h3 id="user-preferences-userdefaults">5.2 User Preferences
+(UserDefaults)</h3>
+<p><strong>Storage</strong>:</p>
+<ul>
+<li>Key: <code>"customStations"</code></li>
+<li>Format: JSON-encoded array of NOAAStation objects</li>
+</ul>
+<p><strong>Persistence Lifecycle</strong>:</p>
+<ol type="1">
+<li><strong>Load</strong>: On CustomStationManager initialization</li>
+<li><strong>Save</strong>: After add/delete operations</li>
+<li><strong>Access</strong>: Real-time through customStations array</li>
+</ol>
+<h2 id="external-dependencies">6. External Dependencies</h2>
+<h3 id="ios-frameworks">6.1 iOS Frameworks</h3>
+<h4 id="swiftui">6.1.1 SwiftUI</h4>
+<ul>
+<li><strong>Purpose</strong>: User interface framework</li>
+<li><strong>Usage</strong>: All views, navigation, sheets, state
+management</li>
+<li><strong>Minimum Version</strong>: iOS 17.0+</li>
+</ul>
+<h4 id="avfoundation">6.1.2 AVFoundation</h4>
+<ul>
+<li><strong>Purpose</strong>: Audio playback</li>
+<li><strong>Components Used</strong>:
+<ul>
+<li><code>AVPlayer</code>: Media playback</li>
+<li><code>AVPlayerItem</code>: Playback resource</li>
+<li><code>AVAudioSession</code>: Audio session configuration</li>
+</ul></li>
+<li><strong>Audio Format</strong>: Streaming MP3 over HTTP/HTTPS</li>
+</ul>
+<h4 id="corelocation">6.1.3 CoreLocation</h4>
+<ul>
+<li><strong>Purpose</strong>: Location services</li>
+<li><strong>Components Used</strong>:
+<ul>
+<li><code>CLLocationManager</code>: Location updates</li>
+<li><code>CLLocation</code>: Geographic coordinates</li>
+<li><code>CLLocationManagerDelegate</code>: Location callbacks</li>
+</ul></li>
+<li><strong>Permissions</strong>: “When In Use” location access</li>
+</ul>
+<h4 id="mapkit">6.1.4 MapKit</h4>
+<ul>
+<li><strong>Purpose</strong>: Location search</li>
+<li><strong>Components Used</strong>:
+<ul>
+<li><code>MKLocalSearch</code>: Natural language location search</li>
+<li><code>MKLocalSearch.Request</code>: Search configuration</li>
+</ul></li>
+<li><strong>Usage</strong>: Converting place names to coordinates</li>
+</ul>
+<h4 id="foundation">6.1.5 Foundation</h4>
+<ul>
+<li><strong>Purpose</strong>: Core utilities</li>
+<li><strong>Components Used</strong>:
+<ul>
+<li><code>JSONDecoder</code>: JSON parsing</li>
+<li><code>UserDefaults</code>: Data persistence</li>
+<li><code>Bundle</code>: Resource access</li>
+<li><code>URL</code>: Network resource handling</li>
+</ul></li>
+</ul>
+<h3 id="external-services">6.2 External Services</h3>
+<h4 id="weather-radio-streaming-services">6.2.1 Weather Radio Streaming
+Services</h4>
+<ul>
+<li><strong>weatherusa.net</strong>: Primary streaming source</li>
+<li><strong>wxradio.org</strong>: Alternative streaming source</li>
+<li><strong>Protocol</strong>: HTTP/HTTPS streaming (typically MP3)</li>
+<li><strong>Availability</strong>: Public, no authentication
+required</li>
+</ul>
+<h2 id="security-and-privacy">7. Security and Privacy</h2>
+<h3 id="location-privacy">7.1 Location Privacy</h3>
+<p><strong>Permission Model</strong>:</p>
+<ul>
+<li>“When In Use” authorization (not “Always”)</li>
+<li>Location only accessed when app is active</li>
+<li>Clear purpose string in Info.plist</li>
+</ul>
+<p><strong>Info.plist Entry</strong>:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode xml"><code class="sourceCode xml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">key</span>&gt;NSLocationWhenInUseUsageDescription&lt;/<span class="kw">key</span>&gt;</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">string</span>&gt;Location is used to find the closest NOAA weather radio station to you.&lt;/<span class="kw">string</span>&gt;</span></code></pre></div>
+<p><strong>Data Handling</strong>:</p>
+<ul>
+<li>Location data never transmitted to external servers</li>
+<li>Only used for local distance calculations</li>
+<li>Not persisted beyond current session</li>
+</ul>
+<h3 id="network-security">7.2 Network Security</h3>
+<p><strong>Stream URLs</strong>:</p>
+<ul>
+<li>Prefer HTTPS over HTTP where available</li>
+<li>No user authentication required</li>
+<li>Public NOAA weather broadcasts</li>
+</ul>
+<h3 id="data-privacy">7.3 Data Privacy</h3>
+<p><strong>User Data</strong>:</p>
+<ul>
+<li>Custom stations stored locally only (UserDefaults)</li>
+<li>No analytics or tracking</li>
+<li>No personal information collected</li>
+<li>No third-party data sharing</li>
+</ul>
+<h2 id="performance-considerations">8. Performance Considerations</h2>
+<h3 id="location-services">8.1 Location Services</h3>
+<p><strong>Accuracy Configuration</strong>:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>desiredAccuracy <span class="op">=</span> kCLLocationAccuracyKilometer</span></code></pre></div>
+<ul>
+<li>Trade-off: Battery life vs. precision</li>
+<li>1km accuracy sufficient for station selection</li>
+<li>Stops location updates after first fix</li>
+</ul>
+<h3 id="station-distance-calculation">8.2 Station Distance
+Calculation</h3>
+<p><strong>Complexity</strong>: O(n) where n = number of stations
+<strong>Optimization</strong>: Single pass through all stations
+<strong>Performance</strong>: Sub-second for ~200 stations</p>
+<h3 id="audio-streaming">8.3 Audio Streaming</h3>
+<p><strong>Buffering</strong>: Handled by AVPlayer automatically
+<strong>Latency</strong>: 10-60 seconds behind live broadcast (typical
+for internet radio) <strong>Background Playback</strong>: Enabled via
+audio session configuration</p>
+<h3 id="memory-management">8.4 Memory Management</h3>
+<p><strong>Station Database</strong>: Loaded once at launch, kept in
+memory (~100KB) <strong>Custom Stations</strong>: Small JSON in
+UserDefaults (typically &lt;10KB) <strong>Audio Buffer</strong>: Managed
+by AVFoundation</p>
+<h2 id="error-handling">9. Error Handling</h2>
+<h3 id="location-errors">9.1 Location Errors</h3>
+<p><strong>Scenarios</strong>:</p>
+<ol type="1">
+<li><strong>User Denies Permission</strong>
+<ul>
+<li>Display: “Location access denied. Using default station.”</li>
+<li>Fallback: Select first station in database</li>
+</ul></li>
+<li><strong>Location Unavailable</strong>
+<ul>
+<li>Display error message with description</li>
+<li>Fallback: Select first station in database</li>
+</ul></li>
+<li><strong>Location Timeout</strong>
+<ul>
+<li>CLLocationManager handles internally</li>
+<li>Falls through to didFailWithError delegate method</li>
+</ul></li>
+</ol>
+<h3 id="audio-errors">9.2 Audio Errors</h3>
+<p><strong>Scenarios</strong>: 1. <strong>Invalid Stream URL</strong> -
+AVPlayer fails to create AVPlayerItem - Status remains “Ready to
+play”</p>
+<ol start="2" type="1">
+<li><strong>Network Failure</strong>
+<ul>
+<li>AVPlayer item fails during playback</li>
+<li>User sees stopped state</li>
+<li>Can retry by pressing Play again</li>
+</ul></li>
+<li><strong>Stream Unavailable</strong>
+<ul>
+<li>AVPlayer reports item failure</li>
+<li>No automatic retry (user must manually retry)</li>
+</ul></li>
+</ol>
+<h3 id="data-loading-errors">9.3 Data Loading Errors</h3>
+<p><strong>Station Database</strong>:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="cf">guard</span> <span class="kw">let</span> <span class="va">url</span> <span class="op">=</span> Bundle<span class="op">.</span>main<span class="op">.</span>url<span class="op">(</span>forResource<span class="op">:</span> <span class="st">&quot;NOAAStations&quot;</span><span class="op">,</span> withExtension<span class="op">:</span> <span class="st">&quot;json&quot;</span><span class="op">)</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  print<span class="op">(</span><span class="st">&quot;❌ Failed to locate NOAAStations.json&quot;</span><span class="op">)</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul>
+<li>Critical error: App cannot function without station data</li>
+<li>Logged to console for debugging</li>
+</ul>
+<p><strong>Custom Stations</strong>:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="cf">catch</span> <span class="op">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  print<span class="op">(</span><span class="st">&quot;❌ Failed to load custom stations: </span><span class="er">\(</span><span class="st">error)&quot;</span><span class="op">)</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  customStations <span class="op">=</span> <span class="op">[]</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul>
+<li>Non-critical: App continues with empty custom stations array</li>
+</ul>
+<h2 id="configuration-and-settings">10. Configuration and Settings</h2>
+<h3 id="app-configuration-info.plist">10.1 App Configuration
+(Info.plist)</h3>
+<p><strong>Required Keys</strong>:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode xml"><code class="sourceCode xml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">key</span>&gt;NSLocationWhenInUseUsageDescription&lt;/<span class="kw">key</span>&gt;</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">string</span>&gt;Location is used to find the closest NOAA weather radio station to you.&lt;/<span class="kw">string</span>&gt;</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">key</span>&gt;UIBackgroundModes&lt;/<span class="kw">key</span>&gt;</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">array</span>&gt;</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  &lt;<span class="kw">string</span>&gt;audio&lt;/<span class="kw">string</span>&gt;</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">array</span>&gt;</span></code></pre></div>
+<h3 id="audio-session-configuration">10.2 Audio Session
+Configuration</h3>
+<p><strong>Category</strong>: <code>.playback</code></p>
+<ul>
+<li>Allows background audio</li>
+<li>Continues during screen lock</li>
+<li>Does not mix with other audio by default</li>
+</ul>
+<p><strong>Mode</strong>: <code>.spokenAudio</code></p>
+<ul>
+<li>Optimized for voice/speech content</li>
+<li>Reduces audio processing overhead</li>
+</ul>
+<h3 id="build-settings">10.3 Build Settings</h3>
+<p><strong>Target</strong>: iOS 17.0+ <strong>Language</strong>: Swift
+6.0+ <strong>Architecture</strong>: Universal (iPhone only, portrait
+orientation)</p>
+<h2 id="testing-considerations">11. Testing Considerations</h2>
+<h3 id="unit-testing-opportunities">11.1 Unit Testing Opportunities</h3>
+<p><strong>NOAAStationService</strong>:</p>
+<ul>
+<li>Distance calculation accuracy</li>
+<li>Station selection logic (closest streamable vs. closest
+overall)</li>
+<li>Location status message generation</li>
+<li>Custom station integration</li>
+</ul>
+<p><strong>CustomStationManager</strong>:</p>
+<ul>
+<li>Add/delete operations</li>
+<li>Persistence (save/load)</li>
+<li>Data validation</li>
+</ul>
+<p><strong>AudioPlayerManager</strong>:</p>
+<ul>
+<li>State transitions (playing/stopped)</li>
+<li>URL switching logic</li>
+</ul>
+<h3 id="integration-testing">11.2 Integration Testing</h3>
+<p><strong>Location Flow</strong>:</p>
+<ol type="1">
+<li>Grant location permission</li>
+<li>Verify closest station selected</li>
+<li>Verify auto-play initiates</li>
+</ol>
+<p><strong>Search Flow</strong>:</p>
+<ol type="1">
+<li>Search for location</li>
+<li>Verify station selection updates</li>
+<li>Verify audio switches streams</li>
+</ol>
+<p><strong>Custom Station Flow</strong>:</p>
+<ol type="1">
+<li>Add custom station</li>
+<li>Verify persistence</li>
+<li>Verify inclusion in station selection</li>
+</ol>
+<h3 id="ui-testing">11.3 UI Testing</h3>
+<p><strong>Scenarios</strong>:</p>
+<ul>
+<li>Launch app → verify auto-play</li>
+<li>Press pause → verify playback stops</li>
+<li>Search location → verify station changes</li>
+<li>Add custom station → verify appears in list</li>
+<li>Delete custom station → verify removed</li>
+</ul>
+<h2 id="deployment">12. Deployment</h2>
+<h3 id="app-store-submission">12.1 App Store Submission</h3>
+<p><strong>Requirements</strong>:</p>
+<ul>
+<li>App icon (all sizes)</li>
+<li>Privacy policy (if collecting data beyond location)</li>
+<li>Screenshots for multiple device sizes</li>
+<li>Description and keywords</li>
+</ul>
+<p><strong>Privacy Declarations</strong>:</p>
+<ul>
+<li>Location usage: For finding closest station</li>
+<li>Network usage: For streaming audio</li>
+</ul>
+<h3 id="versioning">12.2 Versioning</h3>
+<p><strong>Current Version</strong>: 1.0 <strong>Versioning
+Scheme</strong>: Semantic (major.minor.patch)</p>
+<p><strong>Version History</strong>:</p>
+<ul>
+<li>1.0: Initial release
+<ul>
+<li>Auto-location detection</li>
+<li>Streaming playback</li>
+<li>Custom stations</li>
+<li>Location search</li>
+<li>Non-streamable station awareness</li>
+</ul></li>
+</ul>
+<h2 id="future-enhancements">13. Future Enhancements</h2>
+<h3 id="potential-features">13.1 Potential Features</h3>
+<ol type="1">
+<li><p><strong>Expanded Station Database</strong></p>
+<ul>
+<li>Add all 1000+ NOAA transmitters</li>
+<li>Include transmitter tower locations</li>
+<li>Coverage area visualization</li>
+</ul></li>
+<li><p><strong>Favorites System</strong></p>
+<ul>
+<li>Quick access to frequently used stations</li>
+<li>Manual station selection override</li>
+</ul></li>
+<li><p><strong>Alerts and Notifications</strong></p>
+<ul>
+<li>Push notifications for severe weather</li>
+<li>Background monitoring</li>
+<li>Alert audio interruption</li>
+</ul></li>
+<li><p><strong>Siri Integration</strong></p>
+<ul>
+<li>“Hey Siri, play weather radio”</li>
+<li>“Hey Siri, what’s the weather alert?”</li>
+</ul></li>
+<li><p><strong>CarPlay Support</strong></p>
+<ul>
+<li>Dashboard integration</li>
+<li>Simplified interface for driving</li>
+</ul></li>
+<li><p><strong>Widget Support</strong></p>
+<ul>
+<li>Home screen widget showing current conditions</li>
+<li>Quick play/pause control</li>
+</ul></li>
+<li><p><strong>Recording Features</strong></p>
+<ul>
+<li>Record alerts for later playback</li>
+<li>Historical alert archive</li>
+</ul></li>
+<li><p><strong>Offline Mode</strong></p>
+<ul>
+<li>Download and cache recent broadcasts</li>
+<li>Offline station database</li>
+</ul></li>
+</ol>
+<h3 id="technical-improvements">13.2 Technical Improvements</h3>
+<ol type="1">
+<li><p><strong>Caching</strong></p>
+<ul>
+<li>Cache location results</li>
+<li>Reduce redundant distance calculations</li>
+</ul></li>
+<li><p><strong>Analytics</strong></p>
+<ul>
+<li>Usage statistics (privacy-respecting)</li>
+<li>Error reporting</li>
+<li>Stream reliability metrics</li>
+</ul></li>
+<li><p><strong>Accessibility</strong></p>
+<ul>
+<li>VoiceOver optimization</li>
+<li>Dynamic Type support</li>
+<li>High contrast mode</li>
+</ul></li>
+<li><p><strong>Localization</strong></p>
+<ul>
+<li>Multi-language support</li>
+<li>International weather radio systems</li>
+</ul></li>
+</ol>
+<h2 id="code-formatting-standards">14. Code Formatting Standards</h2>
+<p>The project follows strict formatting rules defined in
+<code>format_rules.md</code>:</p>
+<h3 id="key-standards">14.1 Key Standards</h3>
+<p><strong>Braces</strong>: Always on separate lines</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Correct</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">example</span><span class="op">()</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> condition</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// code</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span> <span class="co">// if</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="co">// example</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="co">// Incorrect</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">example</span><span class="op">()</span> <span class="op">{</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> condition <span class="op">{</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// code</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Indentation</strong>: 2 spaces (not tabs)</p>
+<p><strong>Comments</strong>: After closing braces</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="co">// if</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="co">// for</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="co">// func functionName</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="co">// struct StructName</span></span></code></pre></div>
+<p><strong>Parameter Alignment</strong>: Colons aligned vertically</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="fu">example</span><span class="op">(</span><span class="va">parameter1</span><span class="op">:</span> <span class="dt">String</span><span class="op">,</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>             <span class="va">parameter2</span><span class="op">:</span> <span class="dt">Int</span><span class="op">,</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>             <span class="va">parameter3</span><span class="op">:</span> <span class="dt">Bool</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Line Length</strong>: Maximum 80-100 characters
+(flexible)</p>
+<h2 id="appendices">15. Appendices</h2>
+<h3 id="file-structure">15.1 File Structure</h3>
+<pre><code>LocalNOAARadio/
+├── LocalNOAARadio/
+│   ├── LocalNOAARadioApp.swift          # App entry point
+│   ├── ContentView.swift                # Main UI
+│   ├── LocationSearchView.swift         # Location search UI
+│   ├── AddCustomStationView.swift       # Add station form
+│   ├── ManageStationsView.swift         # Station management UI
+│   ├── NOAAStationService.swift         # Station &amp; location logic
+│   ├── AudioPlayerManager.swift         # Audio playback logic
+│   ├── CustomStationManager.swift       # Custom station persistence
+│   ├── NOAAStations.json                # Station database
+│   ├── Info.plist                       # App configuration
+│   ├── format_rules.md                  # Code formatting standards
+│   └── Assets.xcassets/
+│       └── AppIcon.appiconset/          # App icons
+└── LocalNOAARadio.xcodeproj/            # Xcode project</code></pre>
+<h3 id="key-algorithms">15.2 Key Algorithms</h3>
+<h4 id="distance-calculation">Distance Calculation</h4>
+<p>Uses CoreLocation’s built-in geodesic distance:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode swift"><code class="sourceCode swift"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="va">distance</span> <span class="op">=</span> userLocation<span class="op">.</span>distance<span class="op">(</span>from<span class="op">:</span> stationLocation<span class="op">)</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co">// Returns meters along Earth&#39;s surface (great circle distance)</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="va">miles</span> <span class="op">=</span> distance <span class="op">/</span> <span class="fl">1609.34</span></span></code></pre></div>
+<h4 id="station-selection-algorithm">Station Selection Algorithm</h4>
+<pre><code>Input: User location L, Station set S
+Output: Closest streamable station Ss, Closest overall station So
+
+1. Let Ss = null, Ds = ∞
+2. Let So = null, Do = ∞
+
+3. For each station s in S:
+   a. Calculate d = distance(L, s)
+   b. If d &lt; Do:
+      - So = s
+      - Do = d
+   c. If s.hasStream AND d &lt; Ds:
+      - Ss = s
+      - Ds = d
+
+4. Return (Ss, So)</code></pre>
+<h3 id="state-diagram">15.3 State Diagram</h3>
+<pre><code>[App Launch] → [Request Location]
+                      ↓
+              [Location Granted?]
+                ↙          ↘
+              YES           NO
+               ↓             ↓
+    [Find Closest Station] [Use Default]
+               ↓
+    [Station Found with Stream?]
+        ↙              ↘
+       YES              NO
+        ↓               ↓
+    [Auto Play]   [Show No Stream Message]
+        ↓
+    [Playing State]
+        ↓
+    [User Actions: Pause/Search/Settings]</code></pre>
+<h3 id="network-diagram">15.4 Network Diagram</h3>
+<pre><code>┌──────────────┐
+│   iPhone     │
+│ LocalNOAAApp │
+└──────┬───────┘
+       │
+       │ HTTPS Streaming
+       ↓
+┌──────────────────────┐
+│  Weather Radio CDN   │
+│ - weatherusa.net     │
+│ - wxradio.org        │
+└──────┬───────────────┘
+       │
+       │ Origination
+       ↓
+┌──────────────────────┐
+│  NOAA Transmitters   │
+│  (1000+ locations)   │
+└──────────────────────┘</code></pre>
+<hr />
+<h2 id="document-revision-history">Document Revision History</h2>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 16%" />
+<col style="width: 23%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Author</th>
+<th>Changes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-06-16</td>
+<td>Claude Sonnet</td>
+<td>Initial comprehensive SDD</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>End of Document</strong></p>
+</body>
+</html>
