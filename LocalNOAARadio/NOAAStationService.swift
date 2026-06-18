@@ -57,6 +57,7 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
   var locationStatus = "Getting location..."
   var customStationManager = CustomStationManager()
   var sortedStreamableStations: [NOAAStation] = [] // All streamable stations sorted by distance
+  var triedStations: Set<String> = []              // Track stations that have been tried (by callSign)
   
   private let locationManager = CLLocationManager()
   private var stations: [NOAAStation] = []
@@ -180,6 +181,9 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
     var nearestOverallStation: NOAAStation?
     var shortestOverallDistance: CLLocationDistance = .infinity
     
+            // Reset tried stations when location changes
+    triedStations.removeAll()
+    
     print("📍 Your location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
     
             // Combine built-in and custom stations
@@ -270,6 +274,7 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
     
     let nextStation = sortedStreamableStations[currentIndex + 1]
     closestStation = nextStation
+    triedStations.insert(nextStation.callSign)
     
     let distanceInMiles = currentLocation?.distance(from: CLLocation(latitude : nextStation.latitude,
                                                                       longitude: nextStation.longitude)) ?? 0.0
@@ -280,5 +285,61 @@ class NOAAStationService: NSObject, CLLocationManagerDelegate
     
     return nextStation
   } // tryNextClosestStation
+
+
+  //----
+          // Skip to next closest station (user-initiated)
+  func skipToNextStation() -> NOAAStation?
+  {
+    guard !sortedStreamableStations.isEmpty else
+    {
+      print("⚠️ No stations available")
+      return nil
+    } // guard
+    
+            // Mark current station as tried if it exists
+    if let current = closestStation
+    {
+      triedStations.insert(current.callSign)
+    } // if
+    
+            // Find next untried station
+    for station in sortedStreamableStations
+    {
+      if !triedStations.contains(station.callSign)
+      {
+        closestStation = station
+        triedStations.insert(station.callSign)
+        
+        let distanceInMiles = currentLocation?.distance(from: CLLocation(latitude : station.latitude,
+                                                                          longitude: station.longitude)) ?? 0.0
+        let miles = distanceInMiles / 1609.34
+        
+        print("⏭️ Skipping to next station: \(station.city) (\(String(format: "%.1f", miles)) miles away)")
+        locationStatus = "Station: \(station.city) (\(String(format: "%.1f", miles)) mi)"
+        
+        return station
+      } // if
+    } // for
+    
+            // All stations have been tried - reset and start over
+    print("🔄 All stations tried, resetting...")
+    triedStations.removeAll()
+    if let firstStation = sortedStreamableStations.first
+    {
+      closestStation = firstStation
+      triedStations.insert(firstStation.callSign)
+      
+      let distanceInMiles = currentLocation?.distance(from: CLLocation(latitude : firstStation.latitude,
+                                                                        longitude: firstStation.longitude)) ?? 0.0
+      let miles = distanceInMiles / 1609.34
+      
+      locationStatus = "Station: \(firstStation.city) (\(String(format: "%.1f", miles)) mi) - Restarted from closest"
+      
+      return firstStation
+    } // if
+    
+    return nil
+  } // skipToNextStation
 
 } // class NOAAStationService

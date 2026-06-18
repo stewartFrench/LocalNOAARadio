@@ -144,30 +144,62 @@ struct ContentView: View
       } // VStack
       .padding(.horizontal)
       
-              // Play/Pause button
-      Button(action:
+              // Play/Pause and Next Station buttons
+      HStack(spacing: 12)
       {
-        if let station = stationService.closestStation,
-           let url = station.url
+                // Play/Pause button
+        Button(action:
         {
-          audioPlayer.togglePlayPause(url: url)
-        } // if
-      }) // action
-      {
-        HStack
+          if let station = stationService.closestStation,
+             let url = station.url
+          {
+            audioPlayer.togglePlayPause(url: url)
+          } // if
+        }) // action
         {
-          Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-            .font(.title2)
-          Text(audioPlayer.isPlaying ? "Pause" : "Play")
-            .font(.headline)
-        } // HStack
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(stationService.closestStation?.hasStream == true ? Color.blue : Color.gray)
-        .foregroundColor(.white)
-        .cornerRadius(12)
-      } // Button
-      .disabled(stationService.closestStation?.hasStream != true)
+          HStack
+          {
+            Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+              .font(.title2)
+            Text(audioPlayer.isPlaying ? "Pause" : "Play")
+              .font(.headline)
+          } // HStack
+          .frame(maxWidth: .infinity)
+          .padding()
+          .background(stationService.closestStation?.hasStream == true ? Color.blue : Color.gray)
+          .foregroundColor(.white)
+          .cornerRadius(12)
+        } // Button
+        .disabled(stationService.closestStation?.hasStream != true)
+        
+                // Next Station button
+        Button(action:
+        {
+          if let nextStation = stationService.skipToNextStation(),
+             let url = nextStation.url
+          {
+            if audioPlayer.isPlaying
+            {
+              audioPlayer.play(url: url)
+            } // if
+          } // if
+        }) // action
+        {
+          VStack(spacing: 4)
+          {
+            Image(systemName: "forward.fill")
+              .font(.title2)
+            Text("Next")
+              .font(.caption)
+          } // VStack
+          .frame(width: 80)
+          .padding()
+          .background(stationService.sortedStreamableStations.count > 1 ? Color.blue : Color.gray)
+          .foregroundColor(.white)
+          .cornerRadius(12)
+        } // Button
+        .disabled(stationService.sortedStreamableStations.count <= 1)
+      } // HStack
       .padding(.horizontal)
       
               // Status text
@@ -223,12 +255,23 @@ struct ContentView: View
     } // onAppear
     .onChange(of: stationService.closestStation)
     { oldValue, newValue in
-              // Automatically start playing when closest station is found
+              // Handle station changes
       if let station = newValue,
-         let url = station.url,
-         !audioPlayer.isPlaying
+         let url = station.url
       {
-        audioPlayer.play(url: url)
+                // If playing, stop and switch to new stream
+        if audioPlayer.isPlaying
+        {
+          print("🔄 Location changed while playing, switching streams...")
+          audioPlayer.stop()
+          audioPlayer.play(url: url)
+        } // if
+                // If not playing, auto-play on initial load only
+        else if oldValue == nil
+        {
+          print("▶️ Initial station found, auto-playing...")
+          audioPlayer.play(url: url)
+        } // else if
       } // if
     } // onChange
     .onDisappear
