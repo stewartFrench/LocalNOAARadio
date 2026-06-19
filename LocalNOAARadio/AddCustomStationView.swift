@@ -30,7 +30,22 @@ struct AddCustomStationView: View
     {
       Form
       {
-        Section(header: Text("Station Information"))
+        Section
+        {
+          VStack(alignment: .leading, spacing: 8)
+          {
+            Text("Add a Custom NOAA Station")
+              .font(.headline)
+            
+            Text("If you know of a NOAA weather radio station with a streaming URL, you can add it here. The app will include your custom station when determining the closest station to stream from your location.")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+          } // VStack
+          .padding(.vertical, 4)
+        } // Section
+        
+        Section(header: Text("Enter Station Information"))
         {
           TextField("Call Sign (e.g., KEC56)",
                     text: $callSign)
@@ -43,7 +58,7 @@ struct AddCustomStationView: View
                     text: $city)
         } // Section
         
-        Section(header: Text("Location Coordinates"))
+        Section(header: Text("Enter Station Location Coordinates"))
         {
           TextField("Latitude (e.g., 32.7767)",
                     text: $latitude)
@@ -58,14 +73,14 @@ struct AddCustomStationView: View
             .foregroundStyle(.secondary)
         } // Section
         
-        Section(header: Text("Stream URL (Optional)"))
+        Section(header: Text("Stream URL"))
         {
-          TextField("Stream URL (leave blank if no stream)",
+          TextField("Enter Stream URL (e.g., https://...)",
                     text: $streamURL)
             .keyboardType(.URL)
             .autocapitalization(.none)
           
-          Text("Enter the complete streaming URL or leave blank for stations without online streams")
+          Text("Enter the complete streaming URL for the station")
             .font(.caption)
             .foregroundStyle(.secondary)
         } // Section
@@ -114,7 +129,8 @@ struct AddCustomStationView: View
     !frequency.isEmpty &&
     !city.isEmpty &&
     !latitude.isEmpty &&
-    !longitude.isEmpty
+    !longitude.isEmpty &&
+    !streamURL.isEmpty
   } // isValidInput
 
 
@@ -149,7 +165,7 @@ struct AddCustomStationView: View
                                     city     : city,
                                     latitude : lat,
                                     longitude: lon,
-                                    streamURL: streamURL.isEmpty ? nil : streamURL)
+                                    streamURL: streamURL)
     
     dismiss()
   } // addStation

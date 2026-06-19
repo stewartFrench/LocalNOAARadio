@@ -119,34 +119,37 @@ struct ContentView: View
       } // VStack
       .padding(.top)
       
-              // Location status with search button
-      VStack(spacing: 8)
+              // Location status
+      Text(stationService.locationStatus)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal)
+      
+              // All buttons side-by-side
+      HStack(spacing: 12)
       {
-        Text(stationService.locationStatus)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
-        
+                // Enter Location button
         Button(action:
         {
           showLocationSearch = true
         }) // action
         {
-          HStack(spacing: 6)
+          VStack(spacing: 4)
           {
             Image(systemName: "magnifyingglass")
+              .font(.title2)
+            Text("Enter New\nLocation")
               .font(.caption)
-            Text("Search Different Location")
-              .font(.caption)
-          } // HStack
-          .foregroundStyle(.blue)
+              .multilineTextAlignment(.center)
+          } // VStack
+          .frame(maxWidth: .infinity, minHeight: 50)
+          .padding()
+          .background(Color.blue)
+          .foregroundColor(.white)
+          .cornerRadius(12)
         } // Button
-      } // VStack
-      .padding(.horizontal)
-      
-              // Play/Pause and Next Station buttons
-      HStack(spacing: 12)
-      {
+        
                 // Play/Pause button
         Button(action:
         {
@@ -157,16 +160,16 @@ struct ContentView: View
           } // if
         }) // action
         {
-          HStack
+          VStack(spacing: 4)
           {
             Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
               .font(.title2)
             Text(audioPlayer.isPlaying ? "Pause" : "Play")
-              .font(.headline)
-          } // HStack
-          .frame(maxWidth: .infinity)
+              .font(.caption)
+          } // VStack
+          .frame(maxWidth: .infinity, minHeight: 50)
           .padding()
-          .background(stationService.closestStation?.hasStream == true ? Color.blue : Color.gray)
+          .background(stationService.closestStation?.hasStream == true ? Color.green : Color.gray)
           .foregroundColor(.white)
           .cornerRadius(12)
         } // Button
@@ -189,10 +192,11 @@ struct ContentView: View
           {
             Image(systemName: "forward.fill")
               .font(.title2)
-            Text("Next")
+            Text("Next\nClosest")
               .font(.caption)
+              .multilineTextAlignment(.center)
           } // VStack
-          .frame(width: 80)
+          .frame(maxWidth: .infinity, minHeight: 50)
           .padding()
           .background(stationService.sortedStreamableStations.count > 1 ? Color.blue : Color.gray)
           .foregroundColor(.white)
@@ -206,6 +210,7 @@ struct ContentView: View
       Text(audioPlayer.statusText)
         .font(.subheadline)
         .foregroundStyle(.secondary)
+        .padding(.top, 4)
       
               // Debug: Show stream URL
       if let station = stationService.closestStation,
@@ -216,6 +221,7 @@ struct ContentView: View
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
           .padding(.horizontal)
+          .padding(.top, 2)
       } // if
       
               // Scrollable weather information view
@@ -227,6 +233,7 @@ struct ContentView: View
           .frame(maxWidth: .infinity,
                  alignment: .leading)
       } // ScrollView
+      .frame(minHeight: 300)
       .background(Color(.systemGray6))
       .cornerRadius(12)
       .padding(.horizontal)
