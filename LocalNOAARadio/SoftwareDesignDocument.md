@@ -153,6 +153,7 @@ struct NOAAStation: Codable, Equatable
 ```swift
 func requestLocation()
 func findClosestStation(at location: CLLocation)
+func skipToNextStation() -> NOAAStation?
 private func findClosestStationInternal(to location: CLLocation)
 ```
 
@@ -164,6 +165,10 @@ private func findClosestStationInternal(to location: CLLocation)
 - `locationStatus: String` - User-facing status message
 - `customStationManager: CustomStationManager` - Custom station
    integration
+- `sortedStreamableStations: [NOAAStation]` - All streamable stations
+   sorted by distance (used for "Next Closest" feature)
+- `currentStationIndex: Int` - Index in sorted list for cycling through
+   stations
 
 **Algorithm: findClosestStationInternal**
 ```
@@ -193,6 +198,23 @@ private func findClosestStationInternal(to location: CLLocation)
 Uses `CLLocation.distance(from:)` which calculates geodesic distance
 (great circle distance) in meters, then converts to
 miles (÷ 1609.34).
+
+**Algorithm: skipToNextStation**
+```
+1. Check if sortedStreamableStations has at least 2 stations
+2. If yes:
+   a. Increment currentStationIndex
+   b. If index >= array count: wrap to 0 (circular)
+   c. Set closestStation = sortedStreamableStations[currentStationIndex]
+   d. Return new closestStation
+3. If no: return nil
+```
+
+This algorithm allows users to cycle through all available streamable
+stations in order of distance from their location. It's useful for:
+- Trying alternative stations when primary stream fails
+- Exploring nearby station coverage
+- Comparing broadcast quality between stations
 
 #### 4.2.2 AudioPlayerManager
 
@@ -259,17 +281,21 @@ This configuration:
 **Key Methods**:
 
 ```swift
-func addStation( callSign: String, 
-                frequency: String, 
+func addStation( callSign: String,
+                frequency: String,
                      city: String,
-                 latitude: Double, 
-                longitude: Double, 
-                streamURL: String? )
+                 latitude: Double,
+                longitude: Double,
+                streamURL: String )  // Now required, not optional
 func deleteStation( at index: Int )
 func deleteAllStations()
 private func saveCustomStations()
 private func loadCustomStations()
 ```
+
+**Design Change**: The `streamURL` parameter is now required (String instead
+of String?) to ensure all custom stations have streaming capability. This aligns
+with the form validation in AddCustomStationView.
 
 ### 4.3 User Interface Design
 
@@ -286,17 +312,26 @@ VStack
 │   ├── Station city (if available)
 │   └── Station frequency (if available)
 ├── Location Status
-│   ├── Status text (multi-line, centered)
-│   └── "Search Different Location" button
-├── Play/Pause Button
-│   ├── Enabled only if station has stream
-│   ├── Blue background when available
-│   └── Gray background when unavailable
+│   └── Status text (multi-line, centered)
+├── Action Buttons (HStack - side by side)
+│   ├── Enter Location Button (Blue)
+│   │   ├── Magnifying glass icon
+│   │   └── "Enter\nLocation" text
+│   ├── Play/Pause Button (Green when available)
+│   │   ├── Play/Pause icon
+│   │   ├── "Play" or "Pause" text
+│   │   ├── Enabled only if station has stream
+│   │   └── Gray background when unavailable
+│   └── Next Closest Button (Blue when available)
+│       ├── Forward icon
+│       ├── "Next\nClosest" text
+│       ├── Enabled only if multiple streamable stations
+│       └── Gray background when unavailable
 ├── Status Text
 │   └── Current playback status
 ├── Debug Info
 │   └── Stream URL (for development)
-└── ScrollView
+└── ScrollView (minHeight: 300pt)
     └── Dynamic weather information text
 ```
 
@@ -313,12 +348,21 @@ VStack
 - `@State private var showManageStations`
 - `@State private var showLocationSearch`
 
+**Button Styling**:
+
+- All buttons: Equal width using `.frame(maxWidth: .infinity, minHeight: 50)`
+- Layout: VStack with icon above text, `.padding()`, `.cornerRadius(12)`
+- Enter Location: Blue background, always enabled
+- Play/Pause: Green when available (gray when disabled)
+- Next Closest: Blue when available (gray when disabled)
+- Spacing: 12pt between buttons in HStack
+
 **Lifecycle Hooks**:
 
 ```swift
 .onAppear { stationService.requestLocation() }
 .onChange(of: stationService.closestStation)
-    { autoplay if stream available }
+    { autoplay if stream available, or skip to next if no stream }
 .onDisappear { audioPlayer.stop() }
 ```
 
@@ -327,8 +371,17 @@ VStack
 When `closestStation` changes:
 
 1. Check if new station exists and has stream URL
-2. Check if audio is not already playing
-3. If both true: automatically start playback
+2. If yes: automatically start playback
+3. If no stream: automatically skip to next closest streamable station
+
+**Next Station Feature**:
+
+The "Next Closest" button allows users to skip to the next nearest streamable
+station. This is useful when the closest station's stream is unavailable or
+the user wants to check alternative stations. The button:
+- Cycles through stations sorted by distance
+- Only enabled when multiple streamable stations are available
+- Automatically starts playback if audio is already playing
 
 #### 4.3.2 LocationSearchView
 
@@ -359,7 +412,15 @@ search.start { response, error in
 
 #### 4.3.3 AddCustomStationView
 
-**Purpose**: Form interface for adding custom NOAA stations
+**Purpose**: Form interface for adding custom NOAA stations with streaming URLs
+
+**Instructional Header**:
+
+Displays prominent instructions at the top of the form:
+- **Title**: "Add a Custom NOAA Station"
+- **Description**: Explains that users can add NOAA weather radio stations
+  with streaming URLs, and that the app will include custom stations when
+  determining the closest station to stream from their location
 
 **Form Sections**:
 
@@ -371,11 +432,13 @@ search.start { response, error in
 2. **Location Coordinates**
    - Latitude (decimal, -90 to 90, required)
    - Longitude (decimal, -180 to 180, required)
-   - Helper tip for getting coordinates
+   - Helper tip for getting coordinates from Apple Maps
 
-3. **Stream URL (Optional)**
-   - URL text field (http/https)
-   - Can be left empty for non-streamable stations
+3. **Stream URL (Required)**
+   - URL text field (http/https, required)
+   - Helper text: "Enter the complete streaming URL for the station"
+   - **Design Change**: Stream URL is now required (was optional)
+   - This ensures custom stations are only added if they have streaming capability
 
 **Validation**:
 
@@ -386,8 +449,8 @@ isValidInput: Bool
   !frequency.isEmpty &&
   !city.isEmpty &&
   !latitude.isEmpty &&
-  !longitude.isEmpty
-  // Note: streamURL NOT required
+  !longitude.isEmpty &&
+  !streamURL.isEmpty  // Now required
 }
 ```
 
@@ -395,6 +458,14 @@ isValidInput: Bool
 
 - Latitude: -90° ≤ lat ≤ 90°
 - Longitude: -180° ≤ lon ≤ 180°
+
+**UI Design**:
+
+- Clear instructional section at top with headline and explanatory text
+- Organized into logical sections with headers
+- Inline validation feedback
+- "Add" button disabled until all required fields are valid
+- Cancel and Add toolbar buttons for navigation
 
 #### 4.3.4 ManageStationsView
 
@@ -755,9 +826,14 @@ catch {
 - 1.0: Initial release
   - Auto-location detection
   - Streaming playback
-  - Custom stations
+  - Custom stations with required streaming URLs
   - Location search
   - Non-streamable station awareness
+  - Three-button action layout (Enter Location, Play/Pause, Next Closest)
+  - Automatic station skipping when primary station unavailable
+  - Next Station cycling feature
+  - Improved ScrollView sizing for better content visibility
+  - Instructional header in Add Custom Station form
 
 ## 13. Future Enhancements
 
@@ -984,6 +1060,7 @@ Output: Closest streamable station Ss, Closest overall station So
 | Version | Date       | Author          | Changes                           |
 |---------|------------|-----------------|-----------------------------------|
 | 1.0     | 2026-06-16 | Claude Sonnet   | Initial comprehensive SDD         |
+| 1.1     | 2026-06-20 | Claude Sonnet   | Updated UI design documentation for three-button layout, Next Station feature, improved ScrollView sizing, and required streaming URLs for custom stations |
 
 ---
 
