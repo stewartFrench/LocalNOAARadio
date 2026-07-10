@@ -6,73 +6,16 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 
 //------------
 struct ContentView: View
 {
-  @State private var audioPlayer = AudioPlayerManager()
-  @State private var stationService = NOAAStationService()
-  @State private var showManageStations = false
+  @State private var weatherService = NOAAWeatherService()
+  @State private var speechManager = SpeechManager()
+  @State private var locationManager = LocationManager()
   @State private var showLocationSearch = false
-  
-
-          // Computed property for dynamic weather text
-  var weatherText: String
-  {
-    if audioPlayer.isPlaying
-    {
-      return """
-      🔴 LIVE BROADCAST
-      
-      You are listening to continuous NOAA Weather Radio from the National Weather Service.
-      
-      This broadcast provides:
-      • Current weather conditions
-      • Weather forecasts and warnings
-      • Severe weather alerts
-      • Marine and aviation weather
-      • Hydrological information
-      
-      NOAA Weather Radio is the official voice of the National Weather Service, providing 24/7 weather information for your area.
-      
-      Note: Stream may be delayed 10-60 seconds due to internet buffering.
-      """
-    } // if
-    else if stationService.closestStation != nil
-    {
-      let station = stationService.closestStation!
-      return """
-      📻 Ready to Listen
-      
-      Station: \(station.callSign)
-      Location: \(station.city)
-      Frequency: \(station.frequency)
-      
-      NOAA Weather Radio provides continuous weather information directly from the National Weather Service, including:
-      
-      • Local forecasts and conditions
-      • Severe weather warnings
-      • Watches and advisories
-      • Marine and fire weather
-      • Natural disaster information
-      
-      Press PLAY to start listening to your local weather radio station.
-      """
-    } // else if
-    else
-    {
-      return """
-      📍 Finding Your Station
-      
-      Searching for the closest NOAA Weather Radio station to your location...
-      
-      NOAA Weather Radio (NWR) is a nationwide network of radio stations broadcasting continuous weather information directly from the nearest National Weather Service office.
-      
-      NWR broadcasts official Weather Service warnings, watches, forecasts and other hazard information 24 hours a day, 7 days a week.
-      """
-    } // else
-  } // weatherText
   
 
   var body: some View
@@ -82,51 +25,37 @@ struct ContentView: View
               // Header
       VStack(spacing: 8)
       {
-        HStack
-        {
-          Spacer()
-          
-          Button(action:
-          {
-            showManageStations = true
-          }) // action
-          {
-            Image(systemName: "gearshape")
-              .font(.title2)
-              .foregroundStyle(.blue)
-          } // Button
-          .padding(.trailing)
-        } // HStack
-        
-        Image(systemName: "antenna.radiowaves.left.and.right")
+        Image(systemName: "cloud.sun.fill")
           .font(.system(size: 60))
           .foregroundStyle(.blue)
         
-        Text("NOAA Weather Radio")
-          .font(.title)
+        Text("NOAA Weather")
+          .font(.largeTitle)
           .fontWeight(.bold)
         
-        if let station = stationService.closestStation
+        if let location = weatherService.currentLocation
         {
-          Text(station.city)
+          Text(locationManager.locationName ?? "Your Location")
             .font(.headline)
             .foregroundStyle(.secondary)
           
-          Text(station.frequency)
-            .font(.subheadline)
+          Text(String(format: "%.4f°, %.4f°",
+                     location.coordinate.latitude,
+                     location.coordinate.longitude))
+            .font(.caption)
             .foregroundStyle(.secondary)
         } // if
       } // VStack
       .padding(.top)
       
-              // Location status
-      Text(stationService.locationStatus)
-        .font(.caption)
-        .foregroundStyle(.secondary)
+              // Status message
+      Text(weatherService.statusMessage)
+        .font(.subheadline)
+        .foregroundStyle(weatherService.errorMessage != nil ? .red : .secondary)
         .multilineTextAlignment(.center)
         .padding(.horizontal)
       
-              // All buttons side-by-side
+              // Action Buttons
       HStack(spacing: 12)
       {
                 // Enter Location button
@@ -139,7 +68,7 @@ struct ContentView: View
           {
             Image(systemName: "magnifyingglass")
               .font(.title2)
-            Text("Enter New\nLocation")
+            Text("Enter\nLocation")
               .font(.caption)
               .multilineTextAlignment(.center)
           } // VStack
@@ -150,155 +79,297 @@ struct ContentView: View
           .cornerRadius(12)
         } // Button
         
-                // Play/Pause button
+                // Listen button
         Button(action:
         {
-          if let station = stationService.closestStation,
-             let url = station.url
+          if speechManager.isSpeaking
           {
-            audioPlayer.togglePlayPause(url: url)
+            speechManager.stop()
           } // if
+          else
+          {
+            speechManager.speak(weatherService.speechText)
+          } // else
         }) // action
         {
           VStack(spacing: 4)
           {
-            Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+            Image(systemName: speechManager.isSpeaking ? "stop.fill" : "play.fill")
               .font(.title2)
-            Text(audioPlayer.isPlaying ? "Pause" : "Play")
+            Text(speechManager.isSpeaking ? "Stop" : "Listen")
               .font(.caption)
           } // VStack
           .frame(maxWidth: .infinity, minHeight: 50)
           .padding()
-          .background(stationService.closestStation?.hasStream == true ? Color.green : Color.gray)
+          .background(!weatherService.forecastPeriods.isEmpty ? Color.green : Color.gray)
           .foregroundColor(.white)
           .cornerRadius(12)
         } // Button
-        .disabled(stationService.closestStation?.hasStream != true)
+        .disabled(weatherService.forecastPeriods.isEmpty)
         
-                // Next Station button
+                // Refresh button
         Button(action:
         {
-          if let nextStation = stationService.skipToNextStation(),
-             let url = nextStation.url
+          Task
           {
-            if audioPlayer.isPlaying
+            if let location = weatherService.currentLocation
             {
-              audioPlayer.play(url: url)
+              await weatherService.fetchWeather(for: location)
             } // if
-          } // if
+            else if let location = locationManager.currentLocation
+            {
+              await weatherService.fetchWeather(for: location)
+            } // else if
+          } // Task
         }) // action
         {
           VStack(spacing: 4)
           {
-            Image(systemName: "forward.fill")
+            Image(systemName: "arrow.clockwise")
               .font(.title2)
-            Text("Next\nClosest")
+            Text("Refresh")
               .font(.caption)
-              .multilineTextAlignment(.center)
           } // VStack
           .frame(maxWidth: .infinity, minHeight: 50)
           .padding()
-          .background(stationService.sortedStreamableStations.count > 1 ? Color.blue : Color.gray)
+          .background(Color.blue)
           .foregroundColor(.white)
           .cornerRadius(12)
         } // Button
-        .disabled(stationService.sortedStreamableStations.count <= 1)
+        .disabled(weatherService.isLoading)
       } // HStack
       .padding(.horizontal)
       
-              // Status text
-      Text(audioPlayer.statusText)
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-        .padding(.top, 4)
-      
-              // Debug: Show stream URL
-      if let station = stationService.closestStation,
-         let streamURL = station.streamURL
+              // Speech status
+      if speechManager.isSpeaking
       {
-        Text("Stream: \(streamURL)")
-          .font(.caption2)
+        Text(speechManager.statusText)
+          .font(.subheadline)
           .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
-          .padding(.horizontal)
-          .padding(.top, 2)
       } // if
       
-              // Scrollable weather information view
+              // Active alerts section
+      if !weatherService.activeAlerts.isEmpty
+      {
+        VStack(alignment: .leading, spacing: 8)
+        {
+          HStack
+          {
+            Image(systemName: "exclamationmark.triangle.fill")
+              .foregroundStyle(.red)
+            Text("ACTIVE ALERTS")
+              .font(.headline)
+              .foregroundStyle(.red)
+          } // HStack
+          
+          ForEach(weatherService.activeAlerts.prefix(3))
+          { alert in
+            VStack(alignment: .leading, spacing: 4)
+            {
+              Text(alert.properties.event)
+                .font(.subheadline)
+                .fontWeight(.bold)
+              
+              if let headline = alert.properties.headline
+              {
+                Text(headline)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              } // if
+            } // VStack
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.red.opacity(0.1))
+            .cornerRadius(8)
+          } // ForEach
+        } // VStack
+        .padding(.horizontal)
+      } // if
+      
+              // Scrollable weather forecast
       ScrollView
       {
-        Text(weatherText)
-          .font(.body)
-          .padding()
-          .frame(maxWidth: .infinity,
-                 alignment: .leading)
+        VStack(alignment: .leading, spacing: 16)
+        {
+          if weatherService.isLoading
+          {
+            ProgressView("Loading weather data...")
+              .frame(maxWidth: .infinity)
+              .padding()
+          } // if
+          else if let error = weatherService.errorMessage
+          {
+            VStack(spacing: 8)
+            {
+              Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundStyle(.orange)
+              Text(error)
+                .multilineTextAlignment(.center)
+            } // VStack
+            .frame(maxWidth: .infinity)
+            .padding()
+          } // else if
+          else if !weatherService.forecastPeriods.isEmpty
+          {
+            ForEach(weatherService.forecastPeriods.prefix(6))
+            { period in
+              VStack(alignment: .leading, spacing: 8)
+              {
+                HStack
+                {
+                  Text(period.name)
+                    .font(.headline)
+                  Spacer()
+                  Text("\(period.temperature)°\(period.temperatureUnit)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                } // HStack
+                
+                HStack
+                {
+                  Image(systemName: period.isDaytime ? "sun.max.fill" : "moon.stars.fill")
+                    .foregroundStyle(period.isDaytime ? .orange : .blue)
+                  Text(period.shortForecast)
+                    .font(.subheadline)
+                } // HStack
+                
+                Text(period.detailedForecast)
+                  .font(.body)
+                  .foregroundStyle(.secondary)
+                
+                HStack
+                {
+                  Image(systemName: "wind")
+                  Text("\(period.windSpeed) \(period.windDirection)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                } // HStack
+              } // VStack
+              .padding()
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .background(Color(.systemGray6))
+              .cornerRadius(12)
+            } // ForEach
+          } // else if
+          else
+          {
+            VStack(spacing: 16)
+            {
+              Image(systemName: "cloud.sun.fill")
+                .font(.system(size: 60))
+                .foregroundStyle(.blue)
+              
+              Text("Welcome to NOAA Weather")
+                .font(.title2)
+                .fontWeight(.bold)
+              
+              Text("Get real-time weather forecasts and alerts from the National Weather Service")
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+              
+              Text("Tap the location button to get started")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } // VStack
+            .padding()
+          } // else
+        } // VStack
+        .padding()
       } // ScrollView
       .frame(minHeight: 300)
-      .background(Color(.systemGray6))
-      .cornerRadius(12)
-      .padding(.horizontal)
       
       Spacer()
     } // VStack
-    .onAppear
-    {
-      stationService.requestLocation()
-      
-              // Set up stream failure callback
-      audioPlayer.onStreamFailure =
-      {
-        print("🔄 Stream failed, trying next closest station...")
-        if let nextStation = stationService.tryNextClosestStation(),
-           let url = nextStation.url
-        {
-          print("▶️ Auto-switching to: \(nextStation.city)")
-          audioPlayer.play(url: url)
-        } // if
-        else
-        {
-          print("⚠️ No more stations available")
-        } // else
-      } // onStreamFailure
-    } // onAppear
-    .onChange(of: stationService.closestStation)
-    { oldValue, newValue in
-              // Handle station changes
-      if let station = newValue,
-         let url = station.url
-      {
-                // If playing, stop and switch to new stream
-        if audioPlayer.isPlaying
-        {
-          print("🔄 Location changed while playing, switching streams...")
-          audioPlayer.stop()
-          audioPlayer.play(url: url)
-        } // if
-                // If not playing, auto-play on initial load only
-        else if oldValue == nil
-        {
-          print("▶️ Initial station found, auto-playing...")
-          audioPlayer.play(url: url)
-        } // else if
-      } // if
-    } // onChange
-    .onDisappear
-    {
-              // Stop audio when view disappears (app is closed/terminated)
-      audioPlayer.stop()
-    } // onDisappear
-    .sheet(isPresented: $showManageStations)
-    {
-      ManageStationsView(customStationManager: $stationService.customStationManager)
-    } // sheet
     .sheet(isPresented: $showLocationSearch)
     {
-      LocationSearchView(stationService: $stationService)
+      LocationSearchView(weatherService: weatherService,
+                        locationManager: locationManager)
     } // sheet
+    .onAppear
+    {
+      locationManager.requestLocation()
+    } // onAppear
+    .onChange(of: locationManager.currentLocation)
+    {
+      if let location = locationManager.currentLocation
+      {
+        Task
+        {
+          await weatherService.fetchWeather(for: location)
+        } // Task
+      } // if
+    } // onChange
   } // body
 
 } // struct ContentView
 
 
+//------------
+// Simple location manager for getting user location
+@Observable
+class LocationManager: NSObject, CLLocationManagerDelegate
+{
+  private var manager = CLLocationManager()
+  var currentLocation: CLLocation?
+  var locationName: String?
+  var locationStatus: String = "Getting location..."
+  
+  
+  override init()
+  {
+    super.init()
+    manager.delegate = self
+    manager.desiredAccuracy = kCLLocationAccuracyKilometer
+  } // init
+  
+  
+  func requestLocation()
+  {
+    manager.requestWhenInUseAuthorization()
+    manager.requestLocation()
+  } // requestLocation
+  
+  
+  func locationManager(_ manager: CLLocationManager,
+                      didUpdateLocations locations: [CLLocation])
+  {
+    guard let location = locations.first else { return }
+    currentLocation = location
+    locationStatus = "Location found"
+    
+    // Reverse geocode to get location name
+    let geocoder = CLGeocoder()
+    geocoder.reverseGeocodeLocation(location)
+    { placemarks, error in
+      if let placemark = placemarks?.first
+      {
+        if let city = placemark.locality,
+           let state = placemark.administrativeArea
+        {
+          self.locationName = "\(city), \(state)"
+        } // if
+        else if let name = placemark.name
+        {
+          self.locationName = name
+        } // else if
+      } // if
+    } // reverseGeocodeLocation
+  } // didUpdateLocations
+  
+  
+  func locationManager(_ manager: CLLocationManager,
+                      didFailWithError error: Error)
+  {
+    locationStatus = "Failed to get location"
+    print("❌ Location error: \(error)")
+  } // didFailWithError
+
+} // class LocationManager
+
+
+//------------
 #Preview
 {
   ContentView()
